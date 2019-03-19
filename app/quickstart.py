@@ -17,8 +17,7 @@
 
 import argparse
 
-
-def end_to_end(project_id, topic_name, subscription_name, num_messages):
+def end_to_end(project_id, topic_name, subscription_name):
     # [START pubsub_end_to_end]
     import time
 
@@ -44,23 +43,28 @@ def end_to_end(project_id, topic_name, subscription_name, num_messages):
     publish_begin = time.time()
 
     # Publish messages.
-    for n in range(num_messages):
-        data = u'Message number {}'.format(n)
-        # Data must be a bytestring
-        data = data.encode('utf-8')
-        # When you publish a message, the client returns a future.
-        future = publisher.publish(topic_path, data=data)
-        print('Published {} of message ID {}.'.format(data, future.result()))
+    import json
+    data = json.dumps({'lan': 33.33, 'lng': 109.93})
+    # Data must be a bytestring
+    data = data.encode('utf-8')
+    # When you publish a message, the client returns a future.
+    future = publisher.publish(topic_path, data=data)
+    print('Published {} of message ID {}.'.format(data, future.result()))
+    future = publisher.publish(topic_path, data=data)
+    print('Published {} of message ID {}.'.format(data, future.result()))
+    future = publisher.publish(topic_path, data=data)
+    print('Published {} of message ID {}.'.format(data, future.result()))
+    future = publisher.publish(topic_path, data=data)
+    print('Published {} of message ID {}.'.format(data, future.result()))
 
     publish_time = time.time() - publish_begin
-
-    messages = set()
-
+    switch = []
     def callback(message):
         print('Received message: {}'.format(message))
         # Unacknowledged messages will be sent again.
         message.ack()
-        messages.add(message)
+        print(json.loads(message.data.decode('utf-8')))
+        switch.append(True)
 
     subscribe_begin = time.time()
 
@@ -68,19 +72,19 @@ def end_to_end(project_id, topic_name, subscription_name, num_messages):
     subscriber.subscribe(subscription_path, callback=callback)
 
     print('\nListening for messages on {}...\n'.format(subscription_path))
-
+    count = 0
     while True:
-        if len(messages) == num_messages:
+        if count > 500:
             subscribe_time = time.time() - subscribe_begin
             print("\nReceived all messages.")
             print("Publish time lapsed: {:.2f}s.".format(publish_time))
             print("Subscribe time lapsed: {:.2f}s.".format(subscribe_time))
+            print("Total messages received %d" % len(switch))
             break
         else:
             # Sleeps the thread at 50Hz to save on resources.
+            count += 1
             time.sleep(1. / 50)
-    # [END pubsub_end_to_end]
-
 
 if __name__ == '__main__':
 
@@ -91,9 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('project_id', help='Your Google Cloud project ID')
     parser.add_argument('topic_name', help='Your topic name')
     parser.add_argument('subscription_name', help='Your subscription name')
-    parser.add_argument('num_msgs', type=int, help='Number of test messages')
 
     args = parser.parse_args()
 
-    end_to_end(args.project_id, args.topic_name, args.subscription_name,
-               args.num_msgs)
+    end_to_end(args.project_id, args.topic_name, args.subscription_name)
